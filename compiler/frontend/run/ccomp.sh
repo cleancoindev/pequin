@@ -7,7 +7,7 @@ fi
 
 ./run/build-ccomp.sh
 #Expand macros
-gcc -E -c $1 -o 
+gcc -E -c $1 -o out.o
 java -cp bin ccomp.parser_hw/CToSFDLInterpreter $1
 
 #Cpp

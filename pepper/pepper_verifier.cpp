@@ -33,7 +33,9 @@ void run_setup(int num_constraints, int num_inputs,
     std::ifstream Bmat("./bin/" + std::string(NAME) + ".qap.matrix_b");
     std::ifstream Cmat("./bin/" + std::string(NAME) + ".qap.matrix_c");
 
-    libsnark::default_r1cs_ppzksnark_pp::init_public_params();
+    std::ofstream r1cs("./bin/r1cs");
+
+    libff::alt_bn128_pp::init_public_params();
     libsnark::r1cs_constraint_system<FieldT> q;
 
     int Ai, Aj, Bi, Bj, Ci, Cj;
@@ -146,16 +148,36 @@ void run_setup(int num_constraints, int num_inputs,
             q.add_constraint(libsnark::r1cs_constraint<FieldT>(A, B, C));
             
             //dump_constraint(r1cs_constraint<FieldT>(A, B, C), va, variable_annotations);
+	    r1cs << libsnark::r1cs_constraint<FieldT>(A, B, C);
         }
+    r1cs.close();
     
     Amat.close();
     Bmat.close();
     Cmat.close();
 
     libff::start_profiling();
-    libsnark::r1cs_ppzksnark_keypair<libsnark::default_r1cs_ppzksnark_pp> keypair = libsnark::r1cs_ppzksnark_generator<libsnark::default_r1cs_ppzksnark_pp>(q);
-    libsnark::r1cs_ppzksnark_processed_verification_key<libsnark::default_r1cs_ppzksnark_pp> pvk = libsnark::r1cs_ppzksnark_verifier_process_vk<libsnark::default_r1cs_ppzksnark_pp>(keypair.vk);
+    libsnark::r1cs_ppzksnark_keypair<libff::alt_bn128_pp> keypair = libsnark::r1cs_ppzksnark_generator<libff::alt_bn128_pp>(q);
+    libsnark::r1cs_ppzksnark_processed_verification_key<libff::alt_bn128_pp> pvk = libsnark::r1cs_ppzksnark_verifier_process_vk<libff::alt_bn128_pp>(keypair.vk);
 
+    unsigned icLength = keypair.vk.encoded_IC_query.rest.indices.size() + 1;
+
+        cout << "\tVerification key in Solidity compliant format:{" << endl;
+        cout << "\t\tvk.A = Pairing.G2Point(" << outputPointG2AffineAsHex(keypair.vk.alphaA_g2) << ");" << endl;
+        cout << "\t\tvk.B = Pairing.G1Point(" << outputPointG1AffineAsHex(keypair.vk.alphaB_g1) << ");" << endl;
+        cout << "\t\tvk.C = Pairing.G2Point(" << outputPointG2AffineAsHex(keypair.vk.alphaC_g2) << ");" << endl;
+        cout << "\t\tvk.gamma = Pairing.G2Point(" << outputPointG2AffineAsHex(keypair.vk.gamma_g2) << ");" << endl;
+        cout << "\t\tvk.gammaBeta1 = Pairing.G1Point(" << outputPointG1AffineAsHex(keypair.vk.gamma_beta_g1) << ");" << endl;
+        cout << "\t\tvk.gammaBeta2 = Pairing.G2Point(" << outputPointG2AffineAsHex(keypair.vk.gamma_beta_g2) << ");" << endl;
+        cout << "\t\tvk.Z = Pairing.G2Point(" << outputPointG2AffineAsHex(keypair.vk.rC_Z_g2) << ");" << endl;
+        cout << "\t\tvk.IC = new Pairing.G1Point[](" << icLength << ");" << endl;
+        cout << "\t\tvk.IC[0] = Pairing.G1Point(" << outputPointG1AffineAsHex(keypair.vk.encoded_IC_query.first) << ");" << endl;
+        for (size_t i = 1; i < icLength; ++i)
+        {
+                auto vkICi = outputPointG1AffineAsHex(keypair.vk.encoded_IC_query.rest.values[i - 1]);
+                cout << "\t\tvk.IC[" << i << "] = Pairing.G1Point(" << vkICi << ");" << endl;
+        }
+        cout << "\t\t}" << endl;
 
     std::ofstream vkey(vkey_file);
     std::ofstream pkey(pkey_file);
@@ -169,10 +191,10 @@ void run_setup(int num_constraints, int num_inputs,
 void verify (string verification_key_fn, string inputs_fn, string outputs_fn,
              string proof_fn, int num_inputs, int num_outputs, mpz_t prime) {
 
-    libsnark::default_r1cs_ppzksnark_pp::init_public_params();
+    libff::alt_bn128_pp::init_public_params();
    
     libsnark::r1cs_variable_assignment<FieldT> inputvec;
-    libsnark::r1cs_ppzksnark_proof<libsnark::default_r1cs_ppzksnark_pp> proof;
+    libsnark::r1cs_ppzksnark_proof<libff::alt_bn128_pp> proof;
     
     std::cout << "loading proof from file: " << proof_fn << std::endl;
     std::ifstream proof_file(proof_fn);
@@ -213,13 +235,13 @@ void verify (string verification_key_fn, string inputs_fn, string outputs_fn,
 
     cout << "loading vk from file: " << verification_key_fn << std::endl;
     std::ifstream vkey(verification_key_fn);
-    libsnark::r1cs_ppzksnark_processed_verification_key<libsnark::default_r1cs_ppzksnark_pp> pvk;
+    libsnark::r1cs_ppzksnark_processed_verification_key<libff::alt_bn128_pp> pvk;
     vkey >> pvk;
     vkey.close();
 
     cout << "verifying..." << std::endl;
     libff::start_profiling();
-    bool result = libsnark::r1cs_ppzksnark_online_verifier_strong_IC<libsnark::default_r1cs_ppzksnark_pp>(pvk, inputvec, proof);
+    bool result = libsnark::r1cs_ppzksnark_online_verifier_strong_IC<libff::alt_bn128_pp>(pvk, inputvec, proof);
    
     if (result) {
         cout << "VERIFICATION SUCCESSFUL" << std::endl;
