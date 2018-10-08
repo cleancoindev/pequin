@@ -68,7 +68,7 @@ public class ExoComputeStatement extends StatementWithOutputLine implements Outp
 
         // output variables
         iterL(outVars,toCircuitIter);
-        circuit.print("]");
+        circuit.print("] INTERMEDIATE [ G0 G1 G2 G3 G4 ]");
 
         circuit.println("\t// " + this.toString());
     }

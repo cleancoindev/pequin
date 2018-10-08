@@ -30,8 +30,11 @@ void run_setup(int num_constraints, int num_inputs,
                string vkey_file, string pkey_file) {
     
     std::ifstream Amat("./bin/" + std::string(NAME) + ".qap.matrix_a");
+    //std::ifstream Amat("./gadget.a");
     std::ifstream Bmat("./bin/" + std::string(NAME) + ".qap.matrix_b");
+    //std::ifstream Bmat("./gadget.b");
     std::ifstream Cmat("./bin/" + std::string(NAME) + ".qap.matrix_c");
+    //std::ifstream Cmat("./gadget.c");
 
     libsnark::default_r1cs_ppzksnark_pp::init_public_params();
     libsnark::r1cs_constraint_system<FieldT> q;

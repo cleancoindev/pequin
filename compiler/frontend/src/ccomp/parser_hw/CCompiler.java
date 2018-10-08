@@ -29,6 +29,7 @@ import SFE.Compiler.CompileTimeOperator;
 import SFE.Compiler.ConstExpression;
 import SFE.Compiler.Consts;
 import SFE.Compiler.ExoComputeStatement;
+import SFE.Compiler.ExtGadgetStatement;
 import SFE.Compiler.RamGetEnhancedStatement;
 import SFE.Compiler.RamPutEnhancedStatement;
 import SFE.Compiler.FloatConstant;
@@ -1116,7 +1117,7 @@ public class CCompiler {
 			String funcName, int parse_uid, StatementBuffer sb,
 			ArrayList<SFE.Compiler.Expression> args) {
 
-        if (funcName.equals(CBuiltinFunctions.EXO_COMPUTE_NAME)) {
+        if (funcName.equals(CBuiltinFunctions.EXT_GADGET_NAME)) {
             // exo_compute(void *inputs[],uint32_t inSizes[], someStruct *output,int cmpNum);
             // >> input arrays and output array must be ArrayType <<
 
@@ -1231,7 +1232,7 @@ public class CCompiler {
             // end assign input variables */
 
             // now we have everything we need to create the ExoComputeStatement
-            addStatement(new ExoComputeStatement(inVars,outVars,exoId), sb);
+            addStatement(new ExtGadgetStatement(inVars,outVars,exoId), sb);
 
             return VoidRetVal;
         }

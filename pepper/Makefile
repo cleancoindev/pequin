@@ -2,7 +2,7 @@ CXX = g++
 
 # according to libsnark's documentation, we need to use the same conditional defines libsnark was compiled with, as found in
 # thirdparty/libsnark/build/libsnark/CMakeFiles/snark.dir/flags.make
-CXXFLAGS = -m64 -std=c++11 -DCURVE_BN128 -DBN_SUPPORT_SNARK -DBINARY_OUTPUT -DMONTGOMERY_OUTPUT -DNO_PROCPS -DUSE_ASM
+CXXFLAGS = -m64 -std=c++11 -DCURVE_ALT_BN128 -DBN_SUPPORT_SNARK  -DMONTGOMERY_OUTPUT -DNO_PROCPS -DUSE_ASM
 
 AR	:= ar rcs
 
@@ -92,6 +92,8 @@ pepper_verifier_%: pepper_verifier.cpp objs common_defs.h $(BINDIR)/%.params
 	@echo ""
 	$(CXX) $(CXXFLAGS) -DNAME=\"$(TARG)\" $(IFLAGS)  $<  -o $(BINDIR)/$@ $(COMMON_LIB_OBJFILES) $(LDFLAGS)
 
+gadget: gadget0.cpp
+	$(CXX) $(CXXFLAGS) -DNAME=\"$(TARG)\" $(IFLAGS)  $<  -o $(BINDIR)/$@ $(COMMON_LIB_OBJFILES) $(LDFLAGS)
 
 pepper_prover_%: pepper_prover.cpp objs common_defs.h $(BINDIR)/%.params
 	$(eval TARG := $(@:pepper_prover_%=%))

@@ -188,7 +188,7 @@ public class DependencyProfile {
 			}
 
             // preserve exo_computes!
-            if (type.equals(CBuiltinFunctions.EXO_COMPUTE_NAME)) {
+            if (type.equals(CBuiltinFunctions.EXT_GADGET_NAME)) {
                 if (refDatas.containsKey(lineNumber)) {
                     throw new RuntimeException("Assertion error (exo) " + lineNumber);
                 }

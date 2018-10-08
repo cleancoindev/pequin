@@ -109,7 +109,7 @@ public class CompiledStatement extends Statement {
 			parseSplitLine(varNum, rp, in, assignments);
 			return;
 		}
-        if (type.equals(CBuiltinFunctions.EXO_COMPUTE_NAME)) {
+        if (type.equals(CBuiltinFunctions.EXT_GADGET_NAME)) {
             parseExoComputeLine(varNum, rp, in, assignments);
             return;
         }
@@ -291,7 +291,7 @@ public class CompiledStatement extends Statement {
     }
 
     static ParsedExoCompute exoComputeParser(Iterator<String> in) {
-        parseExoCheckInput(in,"EXOID");
+        parseExoCheckInput(in,"GADGETID");
 
         // id#
         final String exoIdStr = in.next();
@@ -310,7 +310,7 @@ public class CompiledStatement extends Statement {
 
         // comment
         parseExoCheckInput(in,"//");
-        parseExoCheckInput(in,"exo_compute");
+        parseExoCheckInput(in,"ext_gadget");
         parseExoCheckInput(in,"#"+exoIdStr);
         parseExoCheckInput(in,"inVectors="+Integer.toString(inVarsStr.size()));
         parseExoCheckInput(in,"outVars="+Integer.toString(outVarsStr.size()));
@@ -329,7 +329,7 @@ public class CompiledStatement extends Statement {
         final List<LvalExpression> outVars = exoFindVarsL(p.outVarsStr);
 
         Program.resetCounter(varNum);   // force next statement to have the correct line number
-        final ExoComputeStatement exo = new ExoComputeStatement(inVars,outVars,p.exoId);
+        final ExtGadgetStatement exo = new ExtGadgetStatement(inVars,outVars,p.exoId);
         exo.toAssignmentStatements_NoChangeRef(assignments);
     }
 

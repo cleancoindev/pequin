@@ -63,10 +63,10 @@ public class ConstraintWriter {
             String line = null;
             while ((line = br.readLine()) != null) {
                 // greater than zero because we know there's a line number and a space first!
-                if (line.indexOf(CBuiltinFunctions.EXO_COMPUTE_NAME) > 0) {
+                if (line.indexOf(CBuiltinFunctions.EXT_GADGET_NAME) > 0) {
                     final Scanner in = new Scanner(line);
                     final String lineNo = in.next();
-                    in.next();  // CBuiltinFunctions.EXO_COMPUTE_NAME
+                    in.next();  // CBuiltinFunctions.EXT_GADGET_NAME
                     final CompiledStatement.ParsedExoCompute p = CompiledStatement.exoComputeParser(in);
 
                     for (String s : p.outVarsStr) {
@@ -163,7 +163,7 @@ public class ConstraintWriter {
 			operation_counts.put(CBuiltinFunctions.HASHPUT_NAME, 0);
 			operation_counts.put(CBuiltinFunctions.RAMGET_ENHANCED_NAME, 0);
 			operation_counts.put(CBuiltinFunctions.RAMPUT_ENHANCED_NAME, 0);
-            operation_counts.put(CBuiltinFunctions.EXO_COMPUTE_NAME, 0);
+            operation_counts.put(CBuiltinFunctions.EXT_GADGET_NAME, 0);
 
 			while ((line = bufferedreader.readLine()) != null) {
 				Scanner in = new Scanner(line);
@@ -194,7 +194,7 @@ public class ConstraintWriter {
 							+ (uniquifier++);
 					toConstraints_addBitVariablesList(in, varName);
 				} else if (type.equals(CBuiltinFunctions.RAMGET_NAME)
-                        || type.equals(CBuiltinFunctions.EXO_COMPUTE_NAME)
+                        || type.equals(CBuiltinFunctions.EXT_GADGET_NAME)
 						|| type.equals(CBuiltinFunctions.RAMPUT_NAME)
 						|| type.equals(CBuiltinFunctions.HASHGET_NAME)
 						|| type.equals(CBuiltinFunctions.HASHPUT_NAME)
@@ -211,6 +211,11 @@ public class ConstraintWriter {
 						String variableName = in.next();
 						out.println("V" + variableName + " //"
 								+ line.split("//")[1]);
+					}
+					if (type.equals(CBuiltinFunctions.EXT_GADGET_NAME)) {
+						for (int i = 769; i<=25560; i++) { // TODO Get the actual space needed for local variables, also encode gadget I
+							out.println("G" + i + " //" + line.split("//")[1]);
+						}
 					}
 					// Do nothing else.
 				} else if (type.equals(CBuiltinFunctions.ASSERT_ZERO_NAME)
@@ -359,7 +364,7 @@ public class ConstraintWriter {
 			}
 		} else if (type.equals("split")) {
 			compileSplitConstraint(in);
-        } else if (type.equals(CBuiltinFunctions.EXO_COMPUTE_NAME)) {
+        } else if (type.equals(CBuiltinFunctions.EXT_GADGET_NAME)) {
             compileExoComputeConstraint(in);
 		} else if (type.equals(CBuiltinFunctions.RAMGET_ENHANCED_NAME)) {
 			compileRAMGetEnhancedConstraint(in);
@@ -606,16 +611,20 @@ public class ConstraintWriter {
 
         if (in.hasNextLine()) {
             in.nextLine();
-        }
+		}
 
         // then just print the same damn thing out again
-        out.print(CBuiltinFunctions.EXO_COMPUTE_NAME.toUpperCase() + " EXOID " + Integer.toString(p.exoId) + " INPUTS [ ");
+        out.print(CBuiltinFunctions.EXT_GADGET_NAME.toUpperCase() + " GADGETID " + Integer.toString(p.exoId) + " INPUTS [ ");
         compileExoLL(p.inVarsStr);
 
         out.print("] OUTPUTS [ ");
-        compileExoL(p.outVarsStr);
+		compileExoL(p.outVarsStr);
 
-        out.println("]");
+		out.print("] INTERMEDIATE [ ");
+		for (int i = 769; i<=25560; i++) { // TODO Get the actual space needed for local variables, also encode gadget I
+			out.print("G" + i + " ");
+		}
+		out.println("]");
     }
 
     private void compileExoL(List<String> inL) {

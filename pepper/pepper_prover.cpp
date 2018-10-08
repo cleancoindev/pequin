@@ -67,20 +67,27 @@ int main (int argc, char* argv[]) {
     libsnark::r1cs_ppzksnark_primary_input<libsnark::default_r1cs_ppzksnark_pp> primary_input;
     libsnark::r1cs_ppzksnark_auxiliary_input<libsnark::default_r1cs_ppzksnark_pp> aux_input;
 
+    std::cout << "Inputs: ";
     for (int i = 0; i < p.n_inputs; i++) {
         FieldT currentVar(prover.input[i]);
+        std::cout << currentVar.as_ulong() << ", ";
         primary_input.push_back(currentVar);
     }
+    std::cout << "\n Outputs: ";
 
     for (int i = 0; i < p.n_outputs; i++) {
         FieldT currentVar(prover.output[i]);
+        std::cout << currentVar.as_ulong() << ", ";
         primary_input.push_back(currentVar);
     }
 
+    std::cout << "\n Aux: ";
     for (int i = 0; i < p.n_vars; i++) {
         FieldT currentVar(prover.F1[i]);
+        std::cout << currentVar.as_ulong() << ", ";
         aux_input.push_back(currentVar);
     }
+    std::cout << "\n";
 
     libff::start_profiling();
     libsnark::r1cs_ppzksnark_proof<libsnark::default_r1cs_ppzksnark_pp> proof = libsnark::r1cs_ppzksnark_prover<libsnark::default_r1cs_ppzksnark_pp>(keypair.pk, primary_input, aux_input);

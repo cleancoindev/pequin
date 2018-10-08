@@ -968,10 +968,10 @@ def generate_computation_pairwise_mem_consistency(mem_op):
 def parse_exo_compute_spec_line(terms):
   cTok = 0
 
-  assert terms[cTok] == "EXO_COMPUTE"
+  assert terms[cTok] == "EXT_GADGET"
   cTok += 1
 
-  assert terms[cTok] == "EXOID"
+  assert terms[cTok] == "GADGETID"
   cTok += 1
 
   exoId = int(terms[cTok])
@@ -997,8 +997,12 @@ def parse_exo_compute_spec_line(terms):
   cTok += 1
 
   (cTok,outVars) = parse_exo_compute_array(terms,cTok)
+  
+  assert terms[cTok] == "INTERMEDIATE"
+  cTok += 1
+  (cTok,intermediateVars) = parse_exo_compute_array(terms, cTok)
 
-  return (inVars,outVars,exoId)
+  return (intermediateVars,inVars,outVars,exoId)
 
 # parse a single array, like [ a b c d ]
 def parse_exo_compute_array(terms,cTok):
@@ -1632,6 +1636,19 @@ def generate_zaatar_matrices(spec_file, shuffled_indices, qap_file_name):
       NzA += cons_entry.Aij
       NzB += cons_entry.Bij
       NzC += cons_entry.Cij
+    if line.startswith("EXT_GADGET"):
+      print "EXT_GADGET column count: " + str(j)
+      print "NUM_VARS: " + str(variables.num_vars)
+      with open("/home/zokrates/pequin_mount/pepper/gadget.a") as f:
+        for line in f:
+          fp_matrix_a.write(line)
+      with open("/home/zokrates/pequin_mount/pepper/gadget.b") as f:
+        for line in f:
+          fp_matrix_b.write(line)
+      with open("/home/zokrates/pequin_mount/pepper/gadget.c") as f:
+        for line in f:
+          fp_matrix_c.write(line)
+      j = j + 27280 # number of constraints added
     else:
       # variable names are directly used in to_basic_constraints.
       # numbering are performed in expand_polynomial_matrixrow.
@@ -1773,9 +1790,9 @@ def expand_polynomial_matrixrow(tokens):
   for term in expanded:
     numNonZeroTerms = numNonZeroTerms + 1
     expanded_list += [" * ".join(term)]
- # print "TOKENS"
+  # print "TOKENS"
 #  print tokens
- # print  expanded_list
+  # print  expanded_list
   return (numNonZeroTerms, " + ".join(expanded_list))
 
 def generate_gamma0(spec_file):
@@ -2164,14 +2181,14 @@ def generate_computation_waksman_network(address_width, width, input):
   return (line, outputs)
 
 def generate_computation_exo_compute(terms, pws_file):
-  (inVars, outVars, exoId) = parse_exo_compute_spec_line(terms)
+  (intermediateVars, inVars, outVars, exoId) = parse_exo_compute_spec_line(terms)
 
   def snd(tup):
     return tup[1]
 
   newLine = []
 
-  newLine.append("EXO_COMPUTE EXOID %d INPUTS [" % exoId)
+  newLine.append("EXT_GADGET GADGETID %d INPUTS [" % exoId)
 
   for i in inVars:
     newLine.append("[")
@@ -2180,6 +2197,9 @@ def generate_computation_exo_compute(terms, pws_file):
 
   newLine.append("] OUTPUTS [")
   newLine += map(snd,map(to_var,outVars));
+  newLine.append("] INTERMEDIATE [")
+
+  newLine += map(snd,map(to_var,intermediateVars))
   newLine.append("]")
 
   pws_file.write(" ".join(newLine) + "\n")
@@ -2291,7 +2311,7 @@ def generate_computation_line(line, pws_file):
     generate_computation_divide(terms[0], terms[1], terms[2], terms[4], pws_file)
   elif line.startswith("MEM_CONSISTENCY"):
     generate_computation_mem_consistency(terms, pws_file)
-  elif line.startswith("EXO_COMPUTE"):
+  elif line.startswith("EXT_GADGET"):
     generate_computation_exo_compute(terms, pws_file)
   else:
     # Depends on whether we have zaatar or ginger constraints

@@ -518,6 +518,102 @@ void ComputationProver::compute_db_put_bits(FILE* pws_file) {
   _ram->put(idx, data);
 }
 
+#include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
+#include <libsnark/gadgetlib1/gadgets/hashes/sha256/sha256_gadget.hpp>
+#include <libsnark/zk_proof_systems/ppzksnark/r1cs_ppzksnark/r1cs_ppzksnark.hpp>
+
+using namespace libsnark;
+using namespace libff;
+
+typedef libff::Fr<alt_bn128_pp> FieldT;
+
+void ComputationProver::compute_ext_gadget(FILE *pws_file) {
+    char cmds[BUFLEN];
+
+    // grab exoid
+    expect_next_token(pws_file, "GADGETID", "Invalid EXT_GADGET");
+    next_token_or_error(pws_file,cmds);
+    int exoId = atoi(cmds);
+
+    expect_next_token(pws_file, "INPUTS", "Invalid EXT_GADGET");
+    expect_next_token(pws_file, "[", "Invalid EXT_GADGET");
+    std::vector< std::vector<std::string> > inVarsStr;
+    // get the input args
+    compute_exo_compute_getLL(inVarsStr, pws_file, cmds);
+
+    expect_next_token(pws_file, "OUTPUTS", "Invalid EXO_COMPUTE");
+    expect_next_token(pws_file, "[", "Invalid EXO_COMPUTE");
+    std::vector<std::string> outVarsStr;
+    // get the output args
+    compute_exo_compute_getL(outVarsStr, pws_file, cmds);
+
+    expect_next_token(pws_file, "INTERMEDIATE", "Invalid EXO_COMPUTE");
+    expect_next_token(pws_file, "[", "Invalid EXO_COMPUTE");
+    std::vector<std::string> intermediateVarsStr;
+    // get the output args
+    compute_exo_compute_getL(intermediateVarsStr, pws_file, cmds);
+
+    libff::alt_bn128_pp::init_public_params();
+    protoboard<FieldT> pb;
+
+    digest_variable<FieldT> left(pb, SHA256_digest_size, "left");
+    digest_variable<FieldT> right(pb, SHA256_digest_size, "right");
+    digest_variable<FieldT> output(pb, SHA256_digest_size, "output");
+
+    sha256_two_to_one_hash_gadget<FieldT> f(pb, left, right, output, "f");
+    f.generate_r1cs_constraints(true);
+
+    libff::bit_vector left_bv;
+    libff::bit_vector right_bv;
+
+    for (int i = 0; i < 256; i++) {
+        left_bv.push_back(inVarsStr[0][i] != "1" ? false : true);
+    }
+    for (int i = 256; i < 512; i++) {
+        right_bv.push_back(inVarsStr[0][i] != "1" ? false : true);
+    }
+
+    left.generate_r1cs_witness(left_bv);
+    right.generate_r1cs_witness(right_bv);
+
+    f.generate_r1cs_witness();
+    
+    assert(pb.is_satisfied());
+    
+    r1cs_variable_assignment<FieldT> values = pb.full_variable_assignment();
+    for (size_t i = 0; i < values.size(); ++i)
+    {
+        std::stringstream ss;
+        ss << values[i].as_bigint();
+        const char *valStr = ss.str().c_str();
+
+        if (i < inVarsStr[0].size()) {
+          assert(values[i].as_bigint() == atoi(inVarsStr[0][i].c_str()));
+          std::cout << inVarsStr[0][i] << ": " << values[i].as_bigint() << "\n";
+        } else if (i < inVarsStr[0].size() + outVarsStr.size()) {
+          const uint index  = i - inVarsStr[0].size();
+          std::cout << outVarsStr[index] << ": " << values[i].as_bigint() << "\n";
+          mpq_t &vval = voc(outVarsStr[index].c_str(),temp_q);
+          if (&vval == &temp_q) {
+            gmp_printf("ERROR: exo_compute trying to write output to a const value, %s.\n", (outVarsStr[index]).c_str());
+          } else if (mpq_set_str(vval, valStr, 0) < 0) {
+            gmp_printf("ERROR: exo_compute failed to convert child process output to mpq_t: %s\n", valStr);
+          }
+        } else {
+          const uint index  = i - inVarsStr[0].size() - outVarsStr.size();
+          std::cout << intermediateVarsStr[index] << ": " << values[i].as_bigint() << "\n";
+          mpq_t &vval = voc(intermediateVarsStr[index].c_str(),temp_q);
+          if (&vval == &temp_q) {
+            gmp_printf("ERROR: exo_compute trying to write output to a const value, %s.\n", (intermediateVarsStr[index]).c_str());
+          } else if (mpq_set_str(vval, valStr, 0) < 0) {
+            gmp_printf("ERROR: exo_compute failed to convert child process output to mpq_t: %s\n", valStr);
+          }
+        }
+    }
+
+    std::cout << "SUCCESSFULLY COMPUTED SHA256\n" << values.size() << "\n";
+}
+
 void ComputationProver::compute_exo_compute(FILE *pws_file) {
     // read in the EXO_COMPUTE line
     char cmds[BUFLEN];
@@ -1333,6 +1429,8 @@ void ComputationProver::compute_from_pws(const char* pws_filename) {
       compute_waksman_network(pws_file);
     } else if (strcmp(tok, "EXO_COMPUTE") == 0) {
       compute_exo_compute(pws_file);
+    } else if (strcmp(tok, "EXT_GADGET") == 0) {
+      compute_ext_gadget(pws_file);
     } else {
       gmp_printf("Unrecognized token: %s\n", tok);
     }
