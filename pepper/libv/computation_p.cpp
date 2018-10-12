@@ -589,10 +589,8 @@ void ComputationProver::compute_ext_gadget(FILE *pws_file) {
 
         if (i < inVarsStr[0].size()) {
           assert(values[i].as_bigint() == atoi(inVarsStr[0][i].c_str()));
-          std::cout << inVarsStr[0][i] << ": " << values[i].as_bigint() << "\n";
         } else if (i < inVarsStr[0].size() + outVarsStr.size()) {
           const uint index  = i - inVarsStr[0].size();
-          std::cout << outVarsStr[index] << ": " << values[i].as_bigint() << "\n";
           mpq_t &vval = voc(outVarsStr[index].c_str(),temp_q);
           if (&vval == &temp_q) {
             gmp_printf("ERROR: exo_compute trying to write output to a const value, %s.\n", (outVarsStr[index]).c_str());
@@ -601,7 +599,6 @@ void ComputationProver::compute_ext_gadget(FILE *pws_file) {
           }
         } else {
           const uint index  = i - inVarsStr[0].size() - outVarsStr.size();
-          std::cout << intermediateVarsStr[index] << ": " << values[i].as_bigint() << "\n";
           mpq_t &vval = voc(intermediateVarsStr[index].c_str(),temp_q);
           if (&vval == &temp_q) {
             gmp_printf("ERROR: exo_compute trying to write output to a const value, %s.\n", (intermediateVarsStr[index]).c_str());
